@@ -4,7 +4,8 @@
 
 **Merci aux organisateurs et à nos partenaires**
 
-[Arkea Asset Management](https://www.arkea-am.com/), [Ateme](https://www.ateme.com/fr/), [CHU Rennes](https://www.chu-rennes.fr/index.html), [Fondation Université de Rennes](https://fondation.univ-rennes.fr/), [Groupama](https://www.groupama.fr/regions/loire-bretagne), [Gwenlake](https://gwenlake.com), [Tac Economics](https://taceconomics.com) et [Le projet TIARe](https://intelligence-artificielle.univ-rennes.fr/tiare).
+[Arkea Asset Management](https://www.arkea-am.com/), [Ateme](https://www.ateme.com/fr/), [CHU Rennes](https://www.chu-rennes.fr/index.html), [Fondation Université de Rennes](https://fondation.univ-rennes.fr/)
+[Groupama](https://www.groupama.fr/regions/loire-bretagne), [Gwenlake](https://gwenlake.com), [Tac Economics](https://taceconomics.com) et [Le projet TIARe](https://intelligence-artificielle.univ-rennes.fr/tiare).
 
 
 </div>
