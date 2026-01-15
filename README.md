@@ -7,4 +7,4 @@ CHU Rennes, Fondation Université de Rennes, GROUPAMA, GWENLAKE, TAC Economics e
 > [!IMPORTANT]
 > Les données et la documentation des sujets se trouvent dans le répertoire sujets !
 
-[!Data Challenge 2026](https://github.com/rennesdatascience/datachallenge2026/blob/main/img/datachallenge2026.png)
+[!Data Challenge 2026](https://github.com/rennesdatascience/datachallenge2026/blob/fc8410f617936b5919dc6f259c039db668ea339a/img/datachallenge2026.png)
