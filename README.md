@@ -2,11 +2,13 @@
 
 # Rennes Data Challenge
 
-**2 jours pour transformer des données en solutions !**
+**Merci aux organisateurs et à nos partenaires**
+
+[Arkea Asset Managementt](https://www.arkea-am.com/), [Ateme](https://www.ateme.com/fr/), [CHU Rennes](https://www.chu-rennes.fr/index.html), [Fondation Université de Rennes](https://fondation.univ-rennes.fr/), [Groupama](https://www.groupama.fr/regions/loire-bretagne), [Gwenlake](https://gwenlake.com), [Tac Economics](https://taceconomics.com) et [Le projet TIARe](https://intelligence-artificielle.univ-rennes.fr/tiare).
+
 
 </div>
 
-## Merci aux organisateurs et à nos partenaires
 
 ![Logo](https://eco.univ-rennes.fr/sites/eco.univ-rennes.fr/files/styles/16_9_large/public/pages/RENNES%20DATA%20CHALLENGE%202025%20AFFICHE%20logos_0.png?h=cac05489&itok=uK1SdxQf)
 
