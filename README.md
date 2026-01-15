@@ -2,7 +2,7 @@
 
 # Rennes Data Challenge
 
-** 2 jours pour transformer des données en solutions ! **
+**2 jours pour transformer des données en solutions !**
 
 </div>
 
