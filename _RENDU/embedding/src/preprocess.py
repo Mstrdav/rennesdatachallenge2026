@@ -48,7 +48,7 @@ class TextPreprocessor:
         """
         return [self.clean_text(t) for t in texts]
 
-    def process_and_save(self, input_file: str, output_file: str, columns: list[str], keep: list[str], use_llm: bool = False, llm_model_name: str = None):
+    def process_and_save(self, input_file: str, output_file: str, columns: list[str], keep: list[str], use_llm: bool = False, llm_model_name: str = None, batch_size: int = 8):
         """
         Pretraitement des données, pour ne garder que les colonnes interessantes (dans le target) et nettoyer les textes.
         Optionally refine with LLM.
@@ -84,7 +84,7 @@ class TextPreprocessor:
                     logger.error("LLMRefiner n'a pas pu être importé. Passage en mode classique.")
                     final_texts = clean_texts
                 else:
-                    logger.info(f"Raffinement par LLM activé avec le modèle {llm_model_name}...")
+                    logger.info(f"Raffinement par LLM activé avec le modèle {llm_model_name} (Batch: {batch_size})...")
                     
                     # Optimisation majeure : Déduplication avant LLM
                     # On ne traite que les textes uniques pour éviter de recalculer 1000 fois la même description
@@ -92,7 +92,7 @@ class TextPreprocessor:
                     logger.info(f"Nombre de textes uniques à raffiner : {len(unique_texts)} / {len(clean_texts)} total")
                     
                     refiner = LLMRefiner(model_name=llm_model_name)
-                    refined_uniques = refiner.refine_batch(unique_texts)
+                    refined_uniques = refiner.refine_batch(unique_texts, batch_size=batch_size)
                     
                     # Création d'un mapping {original_clean: refined}
                     mapping = dict(zip(unique_texts, refined_uniques))

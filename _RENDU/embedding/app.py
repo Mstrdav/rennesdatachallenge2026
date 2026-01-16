@@ -20,6 +20,7 @@ def main():
     parser.add_argument("-m", "--model", type=str, default="Dr-BERT/DrBERT-4GB", help="Nom du modèle HuggingFace à utiliser (défaut: Dr-BERT/DrBERT-4GB)")
     parser.add_argument("--llm-refine", action="store_true", help="Activer le raffinement du texte par LLM")
     parser.add_argument("--llm-model", type=str, default="HuggingFaceTB/SmolLM2-1.7B-Instruct", help="Nom du modèle LLM pour le raffinement (défaut: HuggingFaceTB/SmolLM2-1.7B-Instruct)")
+    parser.add_argument("--batch-size", type=int, default=32, help="Taille du batch pour le LLM (défaut: 32). Augmenter pour plus de vitesse si GPU le permet.")
     args = parser.parse_args()
 
     logger = setup_logger()
@@ -53,8 +54,8 @@ def main():
         if os.path.exists(SOURCE_FILE) and os.path.exists(TARGET_FILE):
              try:
                 # Appel avec arguments LLM
-                preprocessor.process_and_save(SOURCE_FILE, PROCESSED_SOURCE, COLUMNS_SOURCE, SOURCE_KEEP, use_llm=args.llm_refine, llm_model_name=args.llm_model)
-                preprocessor.process_and_save(TARGET_FILE, PROCESSED_TARGET, COLUMNS_TARGET, TARGET_KEEP, use_llm=args.llm_refine, llm_model_name=args.llm_model)
+                preprocessor.process_and_save(SOURCE_FILE, PROCESSED_SOURCE, COLUMNS_SOURCE, SOURCE_KEEP, use_llm=args.llm_refine, llm_model_name=args.llm_model, batch_size=args.batch_size)
+                preprocessor.process_and_save(TARGET_FILE, PROCESSED_TARGET, COLUMNS_TARGET, TARGET_KEEP, use_llm=args.llm_refine, llm_model_name=args.llm_model, batch_size=args.batch_size)
                 logger.info("Prétraitement terminé avec succès.")
              except Exception as e:
                 logger.error(f"Erreur durant le prétraitement : {e}")
