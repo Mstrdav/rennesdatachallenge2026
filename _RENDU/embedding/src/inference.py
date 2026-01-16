@@ -2,6 +2,8 @@ from transformers import AutoTokenizer, AutoModel
 import torch
 import logging
 
+from tqdm import tqdm
+
 class EmbeddingModel:
     def __init__(self, model_name: str = "Dr-BERT/DrBERT-4GB"):
         """
@@ -26,7 +28,7 @@ class EmbeddingModel:
         """
         all_embeddings = []
         
-        for i in range(0, len(texts), batch_size):
+        for i in tqdm(range(0, len(texts), batch_size), desc="Génération des embeddings", unit="batch"):
             batch_texts = texts[i:i + batch_size]
             
             try:
