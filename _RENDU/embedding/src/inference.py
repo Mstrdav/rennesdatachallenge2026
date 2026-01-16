@@ -5,7 +5,7 @@ import logging
 from tqdm import tqdm
 
 class EmbeddingModel:
-    def __init__(self, model_name: str = "Dr-BERT/DrBERT-4GB"):
+    def __init__(self, model_name: str = "sentence-transformers/all-mpnet-base-v2"):
         """
         Initialiser le modèle d'embedding.
         """

@@ -7,7 +7,7 @@ import logging
 from tqdm import tqdm
 
 class LLMRefiner:
-    def __init__(self, model_name: str = "HuggingFaceTB/SmolLM2-1.7B-Instruct", cache_file: str = "llm_cache.json"):
+    def __init__(self, model_name: str = "Qwen/Qwen2.5-0.5B-Instruct", cache_file: str = "llm_cache.json"):
         """
         Initialise le modèle LLM pour le raffinement de texte.
         Supporte les modèles CausalLM (comme GPT, Llama) et Seq2Seq (comme T5).

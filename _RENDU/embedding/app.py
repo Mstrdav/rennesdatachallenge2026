@@ -17,9 +17,9 @@ def main():
     parser = argparse.ArgumentParser(description="Application de matching de produits pour le Bilan Carbone")
     parser.add_argument("-p", "--preprocess-only", action="store_true", help="Exécuter uniquement le prétraitement et quitter")
     parser.add_argument("-f", "--force", action="store_true", help="Forcer le prétraitement même si les fichiers existent")
-    parser.add_argument("-m", "--model", type=str, default="Dr-BERT/DrBERT-4GB", help="Nom du modèle HuggingFace à utiliser (défaut: Dr-BERT/DrBERT-4GB)")
+    parser.add_argument("-m", "--model", type=str, default="sentence-transformers/all-mpnet-base-v2", help="Nom du modèle HuggingFace à utiliser (défaut: sentence-transformers/all-mpnet-base-v2)")
     parser.add_argument("--llm-refine", action="store_true", help="Activer le raffinement du texte par LLM")
-    parser.add_argument("--llm-model", type=str, default="HuggingFaceTB/SmolLM2-1.7B-Instruct", help="Nom du modèle LLM pour le raffinement (défaut: HuggingFaceTB/SmolLM2-1.7B-Instruct)")
+    parser.add_argument("--llm-model", type=str, default="Qwen/Qwen2.5-0.5B-Instruct", help="Nom du modèle LLM pour le raffinement (défaut: Qwen/Qwen2.5-0.5B-Instruct)")
     parser.add_argument("--batch-size", type=int, default=32, help="Taille du batch pour le LLM (défaut: 32). Augmenter pour plus de vitesse si GPU le permet.")
     args = parser.parse_args()
 
