@@ -42,7 +42,7 @@ class TextPreprocessor:
         """
         return [self.clean_text(t) for t in texts]
 
-    def process_and_save(self, input_file: str, output_file: str, columns: list[str], target_keep: list[str] = []):
+    def process_and_save(self, input_file: str, output_file: str, columns: list[str], keep: list[str]):
         """
         Pretraitement des données, pour ne garder que les colonnes interessantes (dans le target) et nettoyer les textes.
         """
@@ -72,10 +72,12 @@ class TextPreprocessor:
 
             # Ajout des colonnes du target
             df_out = pd.DataFrame({'text': clean_texts})
-            df_out[target_keep] = df[target_keep]
+            df_out[keep] = df[keep]
 
-            # suppression de lignes qui ont le meme text, en mettant dans les colonnes du target les valeurs de la ligne supprimée
-            if target_keep:
+            # suppression de lignes qui ont le meme id ou texte, en mettant dans les colonnes du target les valeurs de la ligne supprimée
+            if output_file == "../DATA/PROCESSED/target_processed.csv":
+                df_out = df_out.drop_duplicates(subset='text', keep='first')
+            elif output_file == "../DATA/PROCESSED/source_processed.csv":
                 df_out = df_out.drop_duplicates(subset='text', keep='first')
             
             # Sauvegarde

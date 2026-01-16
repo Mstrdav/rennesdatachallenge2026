@@ -17,6 +17,7 @@ def main():
     parser = argparse.ArgumentParser(description="Application de matching de produits pour le Bilan Carbone")
     parser.add_argument("-p", "--preprocess-only", action="store_true", help="Exécuter uniquement le prétraitement et quitter")
     parser.add_argument("-f", "--force", action="store_true", help="Forcer le prétraitement même si les fichiers existent")
+    parser.add_argument("-m", "--model", type=str, default="Dr-BERT/DrBERT-4GB", help="Nom du modèle HuggingFace à utiliser (défaut: Dr-BERT/DrBERT-4GB)")
     args = parser.parse_args()
 
     logger = setup_logger()
@@ -32,6 +33,7 @@ def main():
     
     COLUMNS_SOURCE = ["DB.LIB", "COMPTE.LIB"]
     COLUMNS_TARGET = ["FE.LIB2", "FE.LIB3"]
+    SOURCE_KEEP = ["PRODUIT.ID"]
     TARGET_KEEP = ["FE.ADEME.ID", "FE.VAL", "FE.Incertitude"] # Colonnes à garder dans le fichier preprocessed
     
     preprocessor = TextPreprocessor()
@@ -43,7 +45,7 @@ def main():
         logger.info("Lancement du prétraitement...")
         if os.path.exists(SOURCE_FILE) and os.path.exists(TARGET_FILE):
              try:
-                preprocessor.process_and_save(SOURCE_FILE, PROCESSED_SOURCE, COLUMNS_SOURCE)
+                preprocessor.process_and_save(SOURCE_FILE, PROCESSED_SOURCE, COLUMNS_SOURCE, SOURCE_KEEP)
                 preprocessor.process_and_save(TARGET_FILE, PROCESSED_TARGET, COLUMNS_TARGET, TARGET_KEEP)
                 logger.info("Prétraitement terminé avec succès.")
              except Exception as e:
@@ -75,14 +77,10 @@ def main():
         # Gestion des valeurs NaN
         source_texts = df_source_proc['text'].fillna('').astype(str).tolist()
         target_texts = df_target_proc['text'].fillna('').astype(str).tolist()
-
-        logger.info("Chargement des données originales pour le rapport final...")
-        df_source_raw = load_data(SOURCE_FILE)
-        df_target_raw = load_data(TARGET_FILE)
         
         # Génération des embeddings
-        logger.info("Génération des embeddings...")
-        model = EmbeddingModel()
+        logger.info(f"Génération des embeddings avec le modèle : {args.model}...")
+        model = EmbeddingModel(model_name=args.model)
         source_embeddings = model.get_embeddings(source_texts)
         target_embeddings = model.get_embeddings(target_texts)
         
@@ -96,18 +94,18 @@ def main():
             match_idx = idx[0]
             similarity_score = dist[0]
             
-            # Récupérer info source originale
-            source_orig = df_source_raw.iloc[i][COLUMNS_SOURCE].fillna('').astype(str).agg(' '.join, axis=1)
-            target_orig = df_target_raw.iloc[match_idx][COLUMNS_TARGET].fillna('').astype(str).agg(' '.join, axis=1)
-            
+            # construction du fichier sortie :
+            # id source, text source, id target, text target, score
+            # trié par score décroissant
             results.append({
-                "source_text_preprocessed": source_texts[i],
-                "source_original": source_orig,
-                "matched_target_original": target_orig,
-                "similarity_score": similarity_score,
-                "target_index": match_idx
+                "id_source": df_source_proc.iloc[i]["PRODUIT.ID"],
+                "text_source": source_texts[i],
+                "id_target": df_target_proc.iloc[match_idx]["FE.ADEME.ID"],
+                "text_target": target_texts[match_idx],
+                "score": similarity_score
             })
             
+        results.sort(key=lambda x: x['score'], reverse=True)
         df_results = pd.DataFrame(results)
         print("\n--- Top Matches ---")
         print(df_results.head())
