@@ -2,6 +2,7 @@ import sys
 import os
 import pandas as pd
 import logging
+import argparse
 
 # Ajouter le répertoire courant au chemin pour permettre l'importation depuis src
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -12,43 +13,80 @@ from src.inference import EmbeddingModel
 from src.matching import Matcher
 
 def main():
+    # Parsing des arguments
+    parser = argparse.ArgumentParser(description="Application de matching de produits pour le Bilan Carbone")
+    parser.add_argument("-p", "--preprocess-only", action="store_true", help="Exécuter uniquement le prétraitement et quitter")
+    parser.add_argument("-f", "--force", action="store_true", help="Forcer le prétraitement même si les fichiers existent")
+    args = parser.parse_args()
+
     logger = setup_logger()
     logger.info("Début du traitement (embedding)")
     
     SOURCE_FILE = "../DATA/RAW/PRODUITS.xlsx"
-    TARGET_FILE = "../DATA/RAW/FE_ADEME.xlsx" # Le fichier Ademe
+    TARGET_FILE = "../DATA/RAW/FE_ADEME.xlsx"
+    
+    PROCESSED_SOURCE = "../DATA/PROCESSED/source_processed.csv"
+    PROCESSED_TARGET = "../DATA/PROCESSED/target_processed.csv"
+    
     OUTPUT_FILE = "../DATA/PROCESSED/MATCHES.xlsx"
+    
     COLUMNS_SOURCE = ["DB.LIB", "COMPTE.LIB"]
     COLUMNS_TARGET = ["FE.LIB1", "FE.LIB3"]
     
-    try:
+    preprocessor = TextPreprocessor()
+    
+    # 1. Étape de Prétraitement
+    do_preprocess = args.force or args.preprocess_only or not (os.path.exists(PROCESSED_SOURCE) and os.path.exists(PROCESSED_TARGET))
+    
+    if do_preprocess:
+        logger.info("Lancement du prétraitement...")
         if os.path.exists(SOURCE_FILE) and os.path.exists(TARGET_FILE):
-             logger.info("Chargement des données réelles...")
-             df_source = load_data(SOURCE_FILE)
-             df_target = load_data(TARGET_FILE)
-             
-             # Combiner plusieurs colonnes en une seule chaîne
-             # fillna('') est utilisé pour gérer les valeurs NaN potentielles en les remplaçant par des chaînes vides
-             source_texts = df_source[COLUMNS_SOURCE].fillna('').astype(str).agg(' '.join, axis=1).tolist()
-             target_texts = df_target[COLUMNS_TARGET].fillna('').astype(str).agg(' '.join, axis=1).tolist()
+             try:
+                preprocessor.process_and_save(SOURCE_FILE, PROCESSED_SOURCE, COLUMNS_SOURCE)
+                preprocessor.process_and_save(TARGET_FILE, PROCESSED_TARGET, COLUMNS_TARGET)
+                logger.info("Prétraitement terminé avec succès.")
+             except Exception as e:
+                logger.error(f"Erreur durant le prétraitement : {e}")
+                return
         else:
-             logger.error("Fichiers sources non trouvés. Arrêt du traitement.")
+             logger.error("Fichiers sources RAW non trouvés. Impossible de prétraiter.")
              return
+    else:
+        logger.info("Les fichiers prétraités existent déjà, on saute l'étape de prétraitement (utiliser -f pour forcer).")
 
-        # Prétraitement des textes
-        logger.info("Prétraitement des textes...")
-        preprocessor = TextPreprocessor()
-        clean_source = preprocessor.preprocess_batch(source_texts)
-        clean_target = preprocessor.preprocess_batch(target_texts)
+    # Si on voulait juste prétraiter, on s'arrête là
+    if args.preprocess_only:
+        logger.info("Mode 'Preprocess Only' activé. Fin du programme.")
+        return
+
+    # 2. Étape d'Embedding et Matching
+    try:
+        # Chargement des données traitées
+        logger.info("Chargement des données prétraitées...")
+        if not (os.path.exists(PROCESSED_SOURCE) and os.path.exists(PROCESSED_TARGET)):
+            logger.error("Fichiers prétraités manquants pour l'étape suivante.")
+            return
+
+        # On charge avec pd.read_csv. On s'attend à une colonne 'text'
+        df_source_proc = pd.read_csv(PROCESSED_SOURCE)
+        df_target_proc = pd.read_csv(PROCESSED_TARGET)
+        
+        # Gestion des valeurs NaN
+        source_texts = df_source_proc['text'].fillna('').astype(str).tolist()
+        target_texts = df_target_proc['text'].fillna('').astype(str).tolist()
+
+        logger.info("Chargement des données originales pour le rapport final...")
+        df_source_raw = load_data(SOURCE_FILE)
+        df_target_raw = load_data(TARGET_FILE)
         
         # Génération des embeddings
         logger.info("Génération des embeddings...")
         model = EmbeddingModel()
-        source_embeddings = model.get_embeddings(clean_source)
-        target_embeddings = model.get_embeddings(clean_target)
+        source_embeddings = model.get_embeddings(source_texts)
+        target_embeddings = model.get_embeddings(target_texts)
         
         # Matching
-        matcher = Matcher(use_faiss=True) # Définir use_faiss=False si problèmes avec FAISS
+        matcher = Matcher(use_faiss=True)
         matcher.fit(target_embeddings)
         distances, indices = matcher.match(source_embeddings, k=1)
         
@@ -57,9 +95,14 @@ def main():
             match_idx = idx[0]
             similarity_score = dist[0]
             
+            # Récupérer info source originale
+            source_orig = df_source_raw.iloc[i][COLUMNS_SOURCE].fillna('').astype(str).agg(' '.join, axis=1)
+            target_orig = df_target_raw.iloc[match_idx][COLUMNS_TARGET].fillna('').astype(str).agg(' '.join, axis=1)
+            
             results.append({
-                "source_text": source_texts[i],
-                "matched_target_text": target_texts[match_idx],
+                "source_text_preprocessed": source_texts[i],
+                "source_original": source_orig,
+                "matched_target_original": target_orig,
                 "similarity_score": similarity_score,
                 "target_index": match_idx
             })
@@ -68,13 +111,13 @@ def main():
         print("\n--- Top Matches ---")
         print(df_results.head())
         
-        # 6. Sauvegarde
+        # Sauvegarde
         save_results(df_results, OUTPUT_FILE)
         logger.info("Fichier de résultats enregistré.")
         
     except Exception as e:
         logger.error(f"Erreur lors du traitement: {e}")
-        # raise e # Décommenter pour déboguer
+        # raise e 
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,14 @@
 import re
 import unicodedata
+import pandas as pd
+import logging
+import sys
+import os
+
+# Add src to path if needed or just relative import if package structure allows
+# Assuming running from root (app.py), but relative imports inside src might need care
+# Using absolute imports based on app.py structure
+from src.utils import load_data, save_results
 
 class TextPreprocessor:
     def __init__(self):
@@ -7,7 +16,7 @@ class TextPreprocessor:
 
     def clean_text(self, text: str) -> str:
         """
-        Nettoyer le texte en mettant en minuscules, en supprimant les accents et les caractères spéciaux.
+        Nettoyer le texte : minuscules, sans accents, sans chiffres, sans caractères spéciaux.
         """
         if not isinstance(text, str):
             return ""
@@ -18,8 +27,11 @@ class TextPreprocessor:
         # Supprimer les accents
         text = str(unicodedata.normalize('NFD', text).encode('ascii', 'ignore').decode("utf-8"))
         
+        # Supprimer les chiffres (ajout demandé)
+        text = re.sub(r'\d+', ' ', text)
+        
         # Supprimer les caractères spéciaux et les espaces supplémentaires
-        text = re.sub(r'[^a-z0-9\s]', ' ', text)
+        text = re.sub(r'[^a-z\s]', ' ', text) # Retrait de 0-9 du regex
         text = re.sub(r'\s+', ' ', text).strip()
         
         return text
@@ -29,3 +41,41 @@ class TextPreprocessor:
         Prétraiter une liste de textes.
         """
         return [self.clean_text(t) for t in texts]
+
+    def process_and_save(self, input_file: str, output_file: str, columns: list[str]):
+        """
+        Charge, nettoie, concatène et sauvegarde les données.
+        """
+        logger = logging.getLogger('Bilan Carbone CHU') # Utiliser le logger existant ou basic
+        logger.info(f"Traitement de {input_file} -> {output_file}")
+        
+        try:
+            df = load_data(input_file)
+            
+            # Vérifier les colonnes
+            missing_cols = [c for c in columns if c not in df.columns]
+            if missing_cols:
+                logger.warning(f"Colonnes manquantes dans {input_file}: {missing_cols}. Elles seront ignorées.")
+                valid_cols = [c for c in columns if c in df.columns]
+            else:
+                valid_cols = columns
+                
+            if not valid_cols:
+                logger.error("Aucune colonne valide trouvée.")
+                return 
+
+            # Concaténation
+            raw_texts = df[valid_cols].fillna('').astype(str).agg(' '.join, axis=1).tolist()
+            
+            # Nettoyage
+            clean_texts = self.preprocess_batch(raw_texts)
+            
+            # Création DataFrame résultat
+            df_out = pd.DataFrame({'text': clean_texts})
+            
+            # Sauvegarde
+            save_results(df_out, output_file)
+            
+        except Exception as e:
+            logger.error(f"Erreur lors du preprocessing de {input_file}: {e}")
+            raise
