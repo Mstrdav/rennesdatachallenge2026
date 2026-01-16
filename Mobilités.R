@@ -31,16 +31,17 @@ ggplot(commune_sf) +
   ggtitle("Communes où vivent des travailleurs du CHU") +
   theme_minimal()
 
+# Lat Lon des hopitaux
 # 48.1189081,-1.6948973 CHU poncha
 # 48.0837382,-1.6556722 CHU sud
 
 
-# 2. Calcul du centre de gravité (centroïde)
+# Calcul du centre de gravité (centroïde)
 commune_sf <- commune_sf %>%
   mutate(centre_gravite = st_centroid(geometry))
 
 
-# 3. Extraire longitude / latitude
+# Extraire longitude / latitude
 coords <- st_coordinates(commune_sf$centre_gravite)
 
 commune_sf$longitude <- coords[, 1]
@@ -53,13 +54,14 @@ commune_sf$latitude  <- coords[, 2]
 
 data_communes = commune_sf
 
+
 # UI
 ui <- fluidPage(
-  titlePanel("Carte interactive des communes de France"),
+  titlePanel("Carte interactive des communes étudiées"),
   
   sidebarLayout(
     sidebarPanel(
-      helpText("Carte des communes avec longitude / latitude.")
+      helpText("Affichage uniquement des communes étudiées (communes_etudiees == TRUE).")
     ),
     mainPanel(
       leafletOutput("map", height = 650)
@@ -71,22 +73,23 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   
   output$map <- renderLeaflet({
-    leaflet(data_communes) %>%
+    df_filtre <- commune_sf %>% filter(communes_etudiees == TRUE)
+    
+    leaflet(df_filtre) %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
       addCircleMarkers(
         lng = ~longitude,
         lat = ~latitude,
-        radius = 5,                    # taille fixe, modifiable
-        fillColor = "blue",            # couleur fixe, modifiable
+        radius = 5,
+        fillColor = "blue",
         fillOpacity = 0.7,
         stroke = FALSE,
-        label = ~nom                   # affichage du nom au survol
+        label = ~nom
       )
   })
 }
 
-# Lancer l'application Shiny
+# Lancer l'app
 shinyApp(ui, server)
-
 
 
