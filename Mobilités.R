@@ -12,7 +12,6 @@ library(shiny)
 library(dplyr)
 library(stringr)
 
-
 commune = read.csv('MOBILITE.csv', sep = ';')
 View(commune)
 
@@ -36,15 +35,6 @@ ggplot(commune_sf) +
 # 48.0837382,-1.6556722 CHU sud
 
 
-
-commune_sf$geometry[2]
-
-
-# 1. Conversion WKT -> géométrie sf
-commune_sf <- commune_sf %>%
-  mutate(geometry2 = st_as_sfc(geometry, crs = 4326)) %>%
-  st_as_sf()
-
 # 2. Calcul du centre de gravité (centroïde)
 commune_sf <- commune_sf %>%
   mutate(centre_gravite = st_centroid(geometry))
@@ -59,26 +49,17 @@ commune_sf$latitude  <- coords[, 2]
 
 #################################################################
 #################################################################
-#################################################################
-#################################################################
 
 
+data_communes = commune_sf
 
-data_final<-read.csv("carte_termine.csv",sep=",",dec=".")
-
-# Optionnel : forcer numeric pour les coordonnées si nécessai
-# -------------------- UI --------------------
+# UI
 ui <- fluidPage(
-  titlePanel("Carte des salaires par ville"),
+  titlePanel("Carte interactive des communes de France"),
   
   sidebarLayout(
     sidebarPanel(
-      radioButtons(
-        "type_salaire",
-        "Type de salaire",
-        choices = c("Théorique" = "pred", "Observé" = "obs"),
-        selected = "pred"
-      )
+      helpText("Carte des communes avec longitude / latitude.")
     ),
     mainPanel(
       leafletOutput("map", height = 650)
@@ -86,58 +67,26 @@ ui <- fluidPage(
   )
 )
 
-# -------------------- SERVER --------------------
+# Server
 server <- function(input, output, session) {
   
-  # Reactive pour créer la colonne salaire_affiche
-  data_react <- reactive({
-    req(data_final)
-    
-    df <- data_final %>%
-      mutate(
-        salaire_affiche = if (input$type_salaire == "pred") {
-          salaire_pred
-        } else {
-          Salaire_mensuel
-        }
-      )
-    
-    df
-  })
-  
-  # Render Leaflet
   output$map <- renderLeaflet({
-    df <- data_react()
-    
-    # Palette de couleur selon le salaire
-    pal <- colorNumeric(
-      palette = "viridis",
-      domain = df$salaire_affiche
-    )
-    
-    leaflet(df) %>%
+    leaflet(data_communes) %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
       addCircleMarkers(
         lng = ~longitude,
         lat = ~latitude,
-        radius = ~0.005*(salaire_affiche), # taille proportionnelle
-        fillColor = ~pal(salaire_affiche),
-        fillOpacity = 0.8,
+        radius = 5,                    # taille fixe, modifiable
+        fillColor = "blue",            # couleur fixe, modifiable
+        fillOpacity = 0.7,
         stroke = FALSE,
-        label = ~paste0(city, " : ", round(salaire_affiche, 0), " €")
-      ) %>%
-      addLegend(
-        pal = pal,
-        values = ~salaire_affiche,
-        title = ifelse(
-          input$type_salaire == "pred",
-          "Salaire théorique (€)",
-          "Salaire observé (€)"
-        )
+        label = ~nom                   # affichage du nom au survol
       )
   })
 }
 
-# -------------------- Lancer l'app --------------------
+# Lancer l'application Shiny
 shinyApp(ui, server)
+
+
 
