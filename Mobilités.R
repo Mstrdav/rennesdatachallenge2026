@@ -17,6 +17,7 @@ commune = read.csv('MOBILITE.csv', sep = ';')
 View(commune)
 
 commune_sf = read_sf('communes-version-simplifiee.geojson')
+view(commune_sf)
 
 commune_sf <- commune_sf |>
   mutate(communes_etudiees = code %in% commune[,1])
@@ -34,38 +35,39 @@ ggplot(commune_sf) +
 # 48.1189081,-1.6948973 CHU poncha
 # 48.0837382,-1.6556722 CHU sud
 
+
+
+commune_sf$geometry[2]
+
+
+# 1. Conversion WKT -> géométrie sf
+commune_sf <- commune_sf %>%
+  mutate(geometry2 = st_as_sfc(geometry, crs = 4326)) %>%
+  st_as_sf()
+
+# 2. Calcul du centre de gravité (centroïde)
+commune_sf <- commune_sf %>%
+  mutate(centre_gravite = st_centroid(geometry))
+
+
+# 3. Extraire longitude / latitude
+coords <- st_coordinates(commune_sf$centre_gravite)
+
+commune_sf$longitude <- coords[, 1]
+commune_sf$latitude  <- coords[, 2]
+
+
+#################################################################
+#################################################################
+#################################################################
+#################################################################
+
+
+
 data_final<-read.csv("carte_termine.csv",sep=",",dec=".")
 
-centre_gravite_sf <- function(obj_sf) {
-  st_centroid(st_union(obj_sf))
-}
-
-commune_sf <- commune_sf |>
-  mutate(centre_gravite = centre_gravite_sf(commune_sf$geometry))
-
-
-
-x =centre_gravite_sf(commune_sf$geometry[2])
-x
-
-commune_sf <- commune_sf %>%
-  mutate(
-    lng = as.numeric(str_extract(geom, "(?<=POINT \\()[^ ]+")),
-    lat  = as.numeric(str_extract(geom, "(?<= )[0-9.-]+(?=\\))"))
-  )
-
-commune_sf <- commune_sf %>%
-  mutate(
-    coords = gsub("POINT \\(|\\)", "", centre_gravite),
-    lng = as.numeric(sub(" .*", "", coords)),
-    lat  = as.numeric(sub(".* ", "", coords))
-  ) %>%
-  select(-coords)
-
-
-##################################################################
-# leaflet
-
+# Optionnel : forcer numeric pour les coordonnées si nécessai
+# -------------------- UI --------------------
 ui <- fluidPage(
   titlePanel("Carte des salaires par ville"),
   
@@ -135,7 +137,7 @@ server <- function(input, output, session) {
       )
   })
 }
+
+# -------------------- Lancer l'app --------------------
 shinyApp(ui, server)
-
-
 
