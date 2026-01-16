@@ -27,10 +27,10 @@ class LLMRefiner:
             
             # Essayer de déterminer le type de modèle (Causal ou Seq2Seq)
             if any(x in model_name.lower() for x in ["t5", "bart"]):
-                self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name, torch_dtype=dtype).to(self.device)
+                self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name, dtype=dtype).to(self.device)
                 self.is_seq2seq = True
             else:
-                self.model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=dtype).to(self.device)
+                self.model = AutoModelForCausalLM.from_pretrained(model_name, dtype=dtype).to(self.device)
                 self.is_seq2seq = False
                 # IMPORTANT pour CausalLM : left padding pour la génération par batch
                 self.tokenizer.padding_side = 'left'
