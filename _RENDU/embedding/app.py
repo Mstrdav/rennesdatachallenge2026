@@ -31,7 +31,8 @@ def main():
     OUTPUT_FILE = "../DATA/PROCESSED/MATCHES.xlsx"
     
     COLUMNS_SOURCE = ["DB.LIB", "COMPTE.LIB"]
-    COLUMNS_TARGET = ["FE.LIB1", "FE.LIB3"]
+    COLUMNS_TARGET = ["FE.LIB2", "FE.LIB3"]
+    TARGET_KEEP = ["FE.ADEME.ID", "FE.VAL", "FE.Incertitude"] # Colonnes à garder dans le fichier preprocessed
     
     preprocessor = TextPreprocessor()
     
@@ -43,7 +44,7 @@ def main():
         if os.path.exists(SOURCE_FILE) and os.path.exists(TARGET_FILE):
              try:
                 preprocessor.process_and_save(SOURCE_FILE, PROCESSED_SOURCE, COLUMNS_SOURCE)
-                preprocessor.process_and_save(TARGET_FILE, PROCESSED_TARGET, COLUMNS_TARGET)
+                preprocessor.process_and_save(TARGET_FILE, PROCESSED_TARGET, COLUMNS_TARGET, TARGET_KEEP)
                 logger.info("Prétraitement terminé avec succès.")
              except Exception as e:
                 logger.error(f"Erreur durant le prétraitement : {e}")
