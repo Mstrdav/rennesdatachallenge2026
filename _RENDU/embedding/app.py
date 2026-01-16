@@ -18,6 +18,8 @@ def main():
     parser.add_argument("-p", "--preprocess-only", action="store_true", help="Exécuter uniquement le prétraitement et quitter")
     parser.add_argument("-f", "--force", action="store_true", help="Forcer le prétraitement même si les fichiers existent")
     parser.add_argument("-m", "--model", type=str, default="Dr-BERT/DrBERT-4GB", help="Nom du modèle HuggingFace à utiliser (défaut: Dr-BERT/DrBERT-4GB)")
+    parser.add_argument("--llm-refine", action="store_true", help="Activer le raffinement du texte par LLM")
+    parser.add_argument("--llm-model", type=str, default="HuggingFaceTB/SmolLM2-1.7B-Instruct", help="Nom du modèle LLM pour le raffinement (défaut: HuggingFaceTB/SmolLM2-1.7B-Instruct)")
     args = parser.parse_args()
 
     logger = setup_logger()
@@ -26,8 +28,13 @@ def main():
     SOURCE_FILE = "../DATA/RAW/PRODUITS.xlsx"
     TARGET_FILE = "../DATA/RAW/FE_ADEME.xlsx"
     
-    PROCESSED_SOURCE = "../DATA/PROCESSED/source_processed.csv"
-    PROCESSED_TARGET = "../DATA/PROCESSED/target_processed.csv"
+    # Modifier les noms de fichiers si LLM est utilisé pour éviter la confusion ou l'écrasement involontaire
+    if args.llm_refine:
+        PROCESSED_SOURCE = "../DATA/PROCESSED/source_processed_llm.csv"
+        PROCESSED_TARGET = "../DATA/PROCESSED/target_processed_llm.csv"
+    else:
+        PROCESSED_SOURCE = "../DATA/PROCESSED/source_processed.csv"
+        PROCESSED_TARGET = "../DATA/PROCESSED/target_processed.csv"
     
     OUTPUT_FILE = "../DATA/PROCESSED/MATCHES.xlsx"
     
@@ -45,8 +52,9 @@ def main():
         logger.info("Lancement du prétraitement...")
         if os.path.exists(SOURCE_FILE) and os.path.exists(TARGET_FILE):
              try:
-                preprocessor.process_and_save(SOURCE_FILE, PROCESSED_SOURCE, COLUMNS_SOURCE, SOURCE_KEEP)
-                preprocessor.process_and_save(TARGET_FILE, PROCESSED_TARGET, COLUMNS_TARGET, TARGET_KEEP)
+                # Appel avec arguments LLM
+                preprocessor.process_and_save(SOURCE_FILE, PROCESSED_SOURCE, COLUMNS_SOURCE, SOURCE_KEEP, use_llm=args.llm_refine, llm_model_name=args.llm_model)
+                preprocessor.process_and_save(TARGET_FILE, PROCESSED_TARGET, COLUMNS_TARGET, TARGET_KEEP, use_llm=args.llm_refine, llm_model_name=args.llm_model)
                 logger.info("Prétraitement terminé avec succès.")
              except Exception as e:
                 logger.error(f"Erreur durant le prétraitement : {e}")
