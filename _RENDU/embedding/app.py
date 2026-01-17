@@ -19,7 +19,7 @@ def main():
     parser.add_argument("-f", "--force", action="store_true", help="Forcer le prétraitement même si les fichiers existent")
     parser.add_argument("-m", "--model", type=str, default="sentence-transformers/all-mpnet-base-v2", help="Nom du modèle HuggingFace à utiliser (défaut: sentence-transformers/all-mpnet-base-v2)")
     parser.add_argument("--llm-refine", action="store_true", help="Activer le raffinement du texte par LLM")
-    parser.add_argument("--llm-model", type=str, default="Qwen/Qwen2.5-0.5B-Instruct", help="Nom du modèle LLM pour le raffinement (défaut: Qwen/Qwen2.5-0.5B-Instruct)")
+    parser.add_argument("--llm-model", type=str, default="Qwen/Qwen2.5-3B-Instruct", help="Nom du modèle LLM pour le raffinement (défaut: Qwen/Qwen2.5-0.5B-Instruct)")
     parser.add_argument("--batch-size", type=int, default=32, help="Taille du batch pour le LLM (défaut: 32). Augmenter pour plus de vitesse si GPU le permet.")
     parser.add_argument("--alpha", type=float, default=0.5, help="Poids de la recherche dense vs BM25 (0.5 = équilibré, 1.0 = Dense uniquement, 0.0 = BM25 uniquement)")
     args = parser.parse_args()

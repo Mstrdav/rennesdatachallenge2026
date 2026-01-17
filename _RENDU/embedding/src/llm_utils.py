@@ -125,6 +125,20 @@ class LLMRefiner:
                     original_text = batch_texts[j]
                     original_index = batch_indices[j]
                     
+                    # --- Garde-fous (Guardrails) ---
+                    # 1. Si " est " présent, on coupe tout ce qui suit (ex: "X est un Y" -> "X")
+                    # On le fait de manière insensible à la casse pour "EST", "Est", "est"
+                    if " est " in cleaned.lower():
+                        # On retrouve l'index insensible à la casse
+                        idx = cleaned.lower().find(" est ")
+                        cleaned = cleaned[:idx].strip()
+                    
+                    # 2. Si le texte généré est plus long que l'original, c'est suspect (hallucination probable)
+                    # On garde l'original dans ce cas.
+                    if len(cleaned) > len(original_text):
+                        # Optionnel : On pourrait garder juste le premier mot, mais l'original est plus sûr.
+                        cleaned = original_text
+
                     # Mise à jour resultats et cache
                     refined_texts[original_index] = cleaned
                     self.cache[original_text] = cleaned
