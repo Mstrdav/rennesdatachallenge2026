@@ -16,8 +16,8 @@ MAX_CO2 = 100  # Limite maximale de CO2
 app_ui = ui.page_fluid(
     ui.h1("🌍 Calculateur d'Empreinte Carbone"),
     
-    ui.layout_sidebar(
-        ui.page_sidebar(
+    ui.page_sidebar(
+        ui.sidebar(
             ui.h3("Sélectionnez vos produits"),
             ui.output_ui("product_buttons"),
             ui.hr(),
