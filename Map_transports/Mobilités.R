@@ -351,7 +351,7 @@ server <- function(input, output, session) {
       addCircleMarkers(
         lng = ~longitude,
         lat = ~latitude,
-        radius = 5,
+        radius = 10,
         fillColor = "blue",
         fillOpacity = 0.7,
         stroke = FALSE,
@@ -366,6 +366,79 @@ server <- function(input, output, session) {
   # ---------------- Lancer l'application Shiny ----------------
 map = shinyApp(ui, server)
 map
+
+
+
+make_leaflet_map <- function() {
+  
+  df_filtre <- commune_voiture_velo3 %>%
+    filter(communes_etudiees == TRUE)
+  
+  labels <- lapply(1:nrow(df_filtre), function(i) {
+    row <- df_filtre[i, ]
+    
+    if (is.na(row$Voiture_Pontchaillou_min) | is.na(row$Voiture_HopitalSud_min) |
+        row$Voiture_Pontchaillou_min > 60 | row$Voiture_HopitalSud_min > 60) {
+      
+      label <- paste0(
+        "<b>", row$nom, "</b><br/>",
+        "Voiture temps moyen (min) : ", round(row$Voiture_min, 1), "<br/>",
+        "Voiture distance moyenne (km) : ", round(row$Voiture_km, 1)
+      )
+      
+    } else {
+      label <- paste0(
+        "<b>", row$nom, "</b><br/>",
+        if (!is.na(row$Voiture_Pontchaillou_km)) paste0("Distance Pontchaillou (km) : ", row$Voiture_Pontchaillou_km, "<br/>") else "",
+        if (!is.na(row$Voiture_HopitalSud_km)) paste0("Distance Hopital Sud (km) : ", row$Voiture_HopitalSud_km, "<br/>") else "",
+        if (!is.na(row$Voiture_Pontchaillou_min)) paste0("Voiture Pontchaillou (min) : ", row$Voiture_Pontchaillou_min, "<br/>") else "",
+        if (!is.na(row$Voiture_HopitalSud_min)) paste0("Voiture Hopital Sud (min) : ", row$Voiture_HopitalSud_min, "<br/>") else "",
+        if (!is.na(row$Velo_Pontchaillou_min)) paste0("Velo Pontchaillou (min) : ", row$Velo_Pontchaillou_min, "<br/>") else "",
+        if (!is.na(row$Velo_HopitalSud_min)) paste0("Velo Hopital Sud (min) : ", row$Velo_HopitalSud_min, "<br/>") else "",
+        if (!is.na(row$Bus_Pontchaillou)) paste0("Bus Pontchaillou (min) : ", row$Bus_Pontchaillou, "<br/>") else "",
+        if (!is.na(row$Bus_HopitalSud)) paste0("Bus Hopital Sud (min) : ", row$Bus_HopitalSud, "<br/>") else ""
+      )
+    }
+    
+    htmltools::HTML(label)
+  })
+  
+  leaflet(df_filtre) %>%
+    addProviderTiles(providers$CartoDB.Positron) %>%
+    addCircleMarkers(
+      lng = ~longitude,
+      lat = ~latitude,
+      radius = 5,
+      fillColor = "blue",
+      fillOpacity = 0.7,
+      stroke = FALSE,
+      label = labels
+    )
+}
+
+
+ui <- fluidPage(
+  titlePanel("Carte interactive des communes étudiées"),
+  leafletOutput("map", height = 650)
+)
+
+server <- function(input, output, session) {
+  output$map <- renderLeaflet({
+    make_leaflet_map()
+  })
+}
+
+shinyApp(ui, server)
+
+
+map_leaflet <- make_leaflet_map()
+
+saveWidget(
+  map_leaflet,
+  file = "carte_communes.html",
+  selfcontained = FALSE
+)
+
 
 
 
