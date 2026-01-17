@@ -1,0 +1,9 @@
+transformers>=4.30.0
+torch>=2.0.0
+pandas>=2.0.0
+faiss-cpu>=1.7.0
+scikit-learn>=1.2.0
+tqdm>=4.65.0
+openpyxl>=3.1.0
+huggingface_hub[hf_xet]
+rank_bm25
