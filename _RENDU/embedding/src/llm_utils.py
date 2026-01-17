@@ -85,7 +85,8 @@ class LLMRefiner:
             self.logger.info("Tous les textes sont déjà en cache.")
             return refined_texts
 
-        prompt_template = "Transforme la description de produit suivante en une phrase courte, claire et sans ambiguïté (en français) : '{}'. Réponse :"
+        # Prompt plus restrictif pour éviter les hallucinations
+        prompt_template = "Tu es un expert en normalisation de données. Ta tâche est de réécrire la description de produit suivante de manière concise et factuelle en français. Supprime les codes inutiles, garde uniquement le nom du produit et si besoin, sa catégorie. Ne rajoute AUCUNE information inventée. Si la description est déjà claire, recopie-la telle quelle. Une exemple serait : ruban crochet et velours dos a dos m x mm coloris blanc unite ref v dd consommables medicaux hs -> ruban medical.\n\nDescription : '{}'\nRéponse :"
         
         self.logger.info(f"Traitement de {len(texts_to_process)} textes (Batch size: {batch_size})...")
         

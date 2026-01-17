@@ -83,6 +83,7 @@ class TextPreprocessor:
                 if LLMRefiner is None:
                     logger.error("LLMRefiner n'a pas pu être importé. Passage en mode classique.")
                     final_texts = clean_texts
+                    raw_stored_texts = clean_texts
                 else:
                     logger.info(f"Raffinement par LLM activé avec le modèle {llm_model_name} (Batch: {batch_size})...")
                     
@@ -97,25 +98,23 @@ class TextPreprocessor:
                     # Création d'un mapping {original_clean: refined}
                     mapping = dict(zip(unique_texts, refined_uniques))
                     
-                    # On réapplique le mapping à toute la liste
-                    # On refait peut-être un passage de clean_text sur le résultat du LLM pour être sûr (formatage uniforme)
-                    # Mais attention, si le LLM sort des phrases bien formées, clean_text (qui vire les accents) peut être destructeur si on voulait garder le sens riche.
-                    # Cependant, pour le matching embedding actuel, on semble vouloir du texte "plat" (sans accents, minuscules).
-                    # Le user a demandé de "transformer toutes les descriptions en courtes phrases claires".
-                    # Si on re-nettoie trop agressivement derrière, on perd peut-être l'intérêt de la grammaire du LLM.
-                    # MAIS, le pipeline de matching s'attend probablement à du texte normalisé.
-                    # On va appliquer un nettoyage léger (minuscule) sur la sortie LLM, ou réutiliser clean_text si cohérent.
-                    # Pour l'instant, appliquons simplement le mapping.
-                    
                     refined_full_list = [mapping[t] for t in clean_texts]
                     
                     # Optionnel: Re-clean le résultat du LLM pour enlever potentielles hallucinations de format
                     final_texts = self.preprocess_batch(refined_full_list)
+                    # On garde le texte nettoyé (mais pas raffiné) comme "raw" pour la tracabilité
+                    raw_stored_texts = clean_texts
             else:
                 final_texts = clean_texts
+                raw_stored_texts = clean_texts
 
             # Ajout des colonnes du target
-            df_out = pd.DataFrame({'text': final_texts})
+            # text_raw = texte avant LLM (mais après nettoyage basique)
+            # text = texte final (après LLM si activé)
+            df_out = pd.DataFrame({
+                'text': final_texts,
+                'text_raw': raw_stored_texts
+            })
             df_out[keep] = df[keep]
 
             # suppression de lignes qui ont le meme id ou texte

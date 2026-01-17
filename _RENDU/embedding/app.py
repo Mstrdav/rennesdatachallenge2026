@@ -71,8 +71,10 @@ def main():
         if os.path.exists(SOURCE_FILE) and os.path.exists(TARGET_FILE):
              try:
                 # Appel avec arguments LLM
+                # Appel avec arguments LLM pour la SOURCE uniquement
                 preprocessor.process_and_save(SOURCE_FILE, PROCESSED_SOURCE, COLUMNS_SOURCE, SOURCE_KEEP, use_llm=args.llm_refine, llm_model_name=args.llm_model, batch_size=args.batch_size)
-                preprocessor.process_and_save(TARGET_FILE, PROCESSED_TARGET, COLUMNS_TARGET, TARGET_KEEP, use_llm=args.llm_refine, llm_model_name=args.llm_model, batch_size=args.batch_size)
+                # JAMAIS de LLM pour la TARGET (Ademe = référence)
+                preprocessor.process_and_save(TARGET_FILE, PROCESSED_TARGET, COLUMNS_TARGET, TARGET_KEEP, use_llm=False, llm_model_name=None, batch_size=args.batch_size)
                 logger.info("Prétraitement terminé avec succès.")
              except Exception as e:
                 logger.error(f"Erreur durant le prétraitement : {e}")
@@ -101,7 +103,12 @@ def main():
         df_target_proc = pd.read_csv(PROCESSED_TARGET)
         
         # Gestion des valeurs NaN
+        # Gestion des valeurs NaN
         source_texts = df_source_proc['text'].fillna('').astype(str).tolist()
+        # Récupération des versions raw si disponibles (sinon fallback sur text)
+        source_texts_raw = df_source_proc['text_raw'].fillna('').astype(str).tolist() if 'text_raw' in df_source_proc.columns else source_texts
+        
+        target_texts = df_target_proc['text'].fillna('').astype(str).tolist()
         target_texts = df_target_proc['text'].fillna('').astype(str).tolist()
         
         # Génération des embeddings
@@ -128,7 +135,8 @@ def main():
             # trié par score décroissant
             results.append({
                 "id_source": df_source_proc.iloc[i]["PRODUIT.ID"],
-                "text_source": source_texts[i],
+                "text_source_raw": source_texts_raw[i],
+                "text_source_refined": source_texts[i],
                 "id_target": df_target_proc.iloc[match_idx]["FE.ADEME.ID"],
                 "text_target": target_texts[match_idx],
                 "score": similarity_score
