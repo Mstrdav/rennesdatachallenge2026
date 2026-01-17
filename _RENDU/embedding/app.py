@@ -21,6 +21,7 @@ def main():
     parser.add_argument("--llm-refine", action="store_true", help="Activer le raffinement du texte par LLM")
     parser.add_argument("--llm-model", type=str, default="Qwen/Qwen2.5-0.5B-Instruct", help="Nom du modèle LLM pour le raffinement (défaut: Qwen/Qwen2.5-0.5B-Instruct)")
     parser.add_argument("--batch-size", type=int, default=32, help="Taille du batch pour le LLM (défaut: 32). Augmenter pour plus de vitesse si GPU le permet.")
+    parser.add_argument("--alpha", type=float, default=0.5, help="Poids de la recherche dense vs BM25 (0.5 = équilibré, 1.0 = Dense uniquement, 0.0 = BM25 uniquement)")
     args = parser.parse_args()
 
     logger = setup_logger()
@@ -47,7 +48,23 @@ def main():
     preprocessor = TextPreprocessor()
     
     # 1. Étape de Prétraitement
-    do_preprocess = args.force or args.preprocess_only or not (os.path.exists(PROCESSED_SOURCE) and os.path.exists(PROCESSED_TARGET))
+    files_exist = os.path.exists(PROCESSED_SOURCE) and os.path.exists(PROCESSED_TARGET)
+    do_preprocess = args.force or args.preprocess_only or not files_exist
+    
+    # Vérification de l'intégrité des fichiers existants (colonnes manquantes ?)
+    if files_exist and not do_preprocess:
+        try:
+            df_s = pd.read_csv(PROCESSED_SOURCE, nrows=5)
+            df_t = pd.read_csv(PROCESSED_TARGET, nrows=5)
+            # On vérifie text + les colonnes ID
+            req_s = ["text"] + SOURCE_KEEP
+            req_t = ["text"] + TARGET_KEEP
+            if not all(col in df_s.columns for col in req_s) or not all(col in df_t.columns for col in req_t):
+                logger.warning("Fichiers prétraités incomplets (colonnes manquantes). On force le prétraitement.")
+                do_preprocess = True
+        except Exception:
+             logger.warning("Fichiers prétraités illisibles. On force le prétraitement.")
+             do_preprocess = True
     
     if do_preprocess:
         logger.info("Lancement du prétraitement...")
@@ -94,9 +111,12 @@ def main():
         target_embeddings = model.get_embeddings(target_texts)
         
         # Matching
-        matcher = Matcher(use_faiss=True)
-        matcher.fit(target_embeddings)
-        distances, indices = matcher.match(source_embeddings, k=1)
+        logger.info(f"Matching hybride (Alpha={args.alpha})...")
+        matcher = Matcher(use_faiss=True, alpha=args.alpha)
+        # On passe les textes cibles pour l'indexation BM25
+        matcher.fit(target_embeddings, target_texts=target_texts)
+        # On passe les textes sources pour le scoring BM25
+        distances, indices = matcher.match(source_embeddings, source_texts=source_texts, k=1)
         
         results = []
         for i, (dist, idx) in enumerate(zip(distances, indices)):
