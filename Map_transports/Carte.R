@@ -1,0 +1,114 @@
+
+#install.packages('leaflet')
+#install.packages('sf')
+#install.packages('shiny')
+#install.packages("mapsapi")
+#install.packages("gtfsrouter")
+#install.packages("tidytransit")
+#install.packages("stplanr")
+#install.packages('googleway')
+#install.packages("htmlwidgets")
+
+library(googleway)
+library(mapsapi)
+library(sf)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(leaflet)
+library(shiny)
+library(dplyr)
+library(stringr)
+library(httr)
+library(jsonlite)
+library(gtfsrouter)
+library(tidytransit)
+library(stplanr)
+library(htmlwidgets)
+
+
+
+
+#####################################
+# AFFICHAGE DE LA CARTE
+#####################################
+  
+# ---------------- UI ----------------
+ui <- fluidPage(
+  titlePanel("Carte interactive des communes étudiées"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      helpText("Affichage uniquement des communes étudiées (communes_etudiees == TRUE).")
+    ),
+    mainPanel(
+      leafletOutput("map", height = 650)
+    )
+  )
+)
+
+# ---------------- SERVER ----------------
+server <- function(input, output, session) {
+  
+  output$map <- renderLeaflet({
+    
+    # Filtrer les communes étudiées
+    df_filtre <- commune_voiture_velo3 %>% filter(communes_etudiees == TRUE)
+    
+    # Construire le label HTML pour le tooltip
+    labels <- lapply(1:nrow(df_filtre), function(i) {
+      row <- df_filtre[i, ]
+      
+      # Condition temps voiture > 60 ou NA
+      if (is.na(row$Voiture_Pontchaillou_min) | is.na(row$Voiture_HopitalSud_min) |
+          row$Voiture_Pontchaillou_min > 60 | row$Voiture_HopitalSud_min > 60) {
+        
+        label <- paste0(
+          "<b>", row$nom, "</b><br/>",
+          "Voiture temps moyen (min) : ", round(row$Voiture_min, 1), "<br/>",
+          "Voiture distance moyenne (km) : ", round(row$Voiture_km, 1)
+        )
+        
+      } else {
+        # Affichage détaillé, sans les NA
+        label <- paste0(
+          "<b>", row$nom, "</b><br/>",
+          if (!is.na(row$Voiture_Pontchaillou_km)) paste0("Distance Pontchaillou (km) : ", row$Voiture_Pontchaillou_km, "<br/>") else "",
+          if (!is.na(row$Voiture_HopitalSud_km)) paste0("Distance Hopital Sud (km) : ", row$Voiture_HopitalSud_km, "<br/>") else "",
+          if (!is.na(row$Voiture_Pontchaillou_min)) paste0("Voiture Pontchaillou (min) : ", row$Voiture_Pontchaillou_min, "<br/>") else "",
+          if (!is.na(row$Voiture_HopitalSud_min)) paste0("Voiture Hopital Sud (min) : ", row$Voiture_HopitalSud_min, "<br/>") else "",
+          if (!is.na(row$Velo_Pontchaillou_min)) paste0("Velo Pontchaillou (min) : ", row$Velo_Pontchaillou_min, "<br/>") else "",
+          if (!is.na(row$Velo_HopitalSud_min)) paste0("Velo Hopital Sud (min) : ", row$Velo_HopitalSud_min, "<br/>") else "",
+          if (!is.na(row$Bus_Pontchaillou)) paste0("Bus Pontchaillou (min) : ", row$Bus_Pontchaillou, "<br/>") else "",
+          if (!is.na(row$Bus_HopitalSud)) paste0("Bus Hopital Sud (min) : ", row$Bus_HopitalSud, "<br/>") else ""
+        )
+      }
+      
+      HTML(label)
+    })
+    
+    # Carte Leaflet
+    leaflet(df_filtre) %>%
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      addCircleMarkers(
+        lng = ~longitude,
+        lat = ~latitude,
+        radius = 5,
+        fillColor = "blue",
+        fillOpacity = 0.7,
+        stroke = FALSE,
+        label = labels
+      )
+  })
+}
+
+  
+  
+  
+  # ---------------- Lancer l'application Shiny ----------------
+map = shinyApp(ui, server)
+map
+
+
+
+
